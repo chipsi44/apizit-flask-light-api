@@ -17,6 +17,31 @@ def test_health(client):
     assert response.get_json() == {"status": "ok"}
 
 
+def test_duration_canary_waits_for_the_requested_bounded_interval(client, monkeypatch):
+    observed = []
+    clock = iter([10.0, 12.5])
+    monkeypatch.setattr("app.routes.sleep", observed.append)
+    monkeypatch.setattr("app.routes.monotonic", lambda: next(clock))
+
+    response = client.get("/canary/wait/2")
+
+    assert response.status_code == 200
+    assert observed == [2]
+    assert response.get_json() == {
+        "elapsed_seconds": 2.5,
+        "requested_seconds": 2,
+        "status": "completed",
+    }
+
+
+@pytest.mark.parametrize("seconds", [0, 131])
+def test_duration_canary_rejects_out_of_bounds_values(client, seconds):
+    response = client.get(f"/canary/wait/{seconds}")
+
+    assert response.status_code == 400
+    assert response.get_json() == {"error": "'seconds' must be between 1 and 130."}
+
+
 def test_summary(client):
     response = client.post("/api/v1/summary", json={"values": [1, 2, 3, 4]})
 

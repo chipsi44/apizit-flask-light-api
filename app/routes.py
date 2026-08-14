@@ -1,4 +1,5 @@
 from numbers import Real
+from time import monotonic, sleep
 
 import numpy as np
 import pandas as pd
@@ -46,6 +47,22 @@ def index():
 @api.get("/health")
 def health():
     return jsonify(status="ok")
+
+
+@api.get("/canary/wait/<int:seconds>")
+def duration_canary(seconds: int):
+    """Bounded launch fixture for validating APIZIT's public duration ceilings."""
+
+    if seconds < 1 or seconds > 130:
+        return jsonify(error="'seconds' must be between 1 and 130."), 400
+
+    started_at = monotonic()
+    sleep(seconds)
+    return jsonify(
+        requested_seconds=seconds,
+        elapsed_seconds=round(monotonic() - started_at, 3),
+        status="completed",
+    )
 
 
 @api.post("/api/v1/summary")
