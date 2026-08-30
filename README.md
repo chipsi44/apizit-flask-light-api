@@ -1,62 +1,46 @@
-# Flask Data API
+# APIZIT Flask Light API
 
-A small public REST API built with Flask, Pandas, and NumPy. It exposes a few
-useful data operations without requiring a database or external service.
+A minimal Flask API for repeatable APIZIT scan, build, launch, and timeout tests.
+It has one production dependency, no external service, and no cloud-specific code.
 
-## Endpoints
+## Routes
 
-| Method | Path | Description |
+| Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Health check |
-| `POST` | `/api/v1/summary` | Descriptive statistics for a numeric series |
-| `POST` | `/api/v1/normalize` | Z-score normalization |
-| `POST` | `/api/v1/correlation` | Pearson correlation between two series |
+| `GET` | `/health` | Immediate health response |
+| `GET` | `/info` | Framework and profile metadata |
+| `POST` | `/echo` | JSON request and response |
+| `GET` | `/items/<item_id>?include_details=true` | Path and query parameters |
+| `GET` | `/slow` | Intentional 80-second response |
 
-All inputs must be finite JSON numbers. Request bodies are limited to 64 KiB.
+`/slow` is a timeout probe. Never configure it as a health check.
 
 ## Run locally
 
-Requirements: Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+Python 3.12 is required.
 
 ```bash
-uv sync
-uv run flask --app app run --debug
+python -m venv .venv
+# Linux/macOS: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+python -m flask --app app run
 ```
 
-The API will be available at `http://127.0.0.1:5000`.
-
-## Examples
-
-Summary:
+The API is available at `http://127.0.0.1:5000`.
 
 ```bash
-curl -X POST http://127.0.0.1:5000/api/v1/summary \
-  -H "Content-Type: application/json" \
-  -d '{"values":[4,8,15,16,23,42]}'
+curl http://127.0.0.1:5000/health
+curl "http://127.0.0.1:5000/items/7?include_details=true"
+curl -X POST http://127.0.0.1:5000/echo -H "Content-Type: application/json" -d '{"message":"hello","count":2}'
 ```
 
-Normalization:
+## Verify
 
 ```bash
-curl -X POST http://127.0.0.1:5000/api/v1/normalize \
-  -H "Content-Type: application/json" \
-  -d '{"values":[10,20,30]}'
+ruff check .
+ruff format --check .
+pytest -q
 ```
 
-Correlation:
-
-```bash
-curl -X POST http://127.0.0.1:5000/api/v1/correlation \
-  -H "Content-Type: application/json" \
-  -d '{"x":[1,2,3,4],"y":[2,4,6,8]}'
-```
-
-## Tests
-
-```bash
-uv run pytest
-```
-
-## License
-
-MIT
+This is a controlled beta reference project, not a production application.
